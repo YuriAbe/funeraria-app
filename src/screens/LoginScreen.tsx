@@ -16,6 +16,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
+  Cadastro: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
@@ -115,7 +116,12 @@ export default function LoginScreen() {
       <View style={styles.signupContainer}>
         <Text style={styles.signupText}>
           Não tem uma conta?{' '}
-          <Text style={styles.signupLink}>Arrume seu lugar!</Text>
+          <Text 
+            style={styles.signupLink}
+            onPress={() => navigation.navigate('Cadastro')}
+          >
+            Arrume seu lugar!
+          </Text>
         </Text>
       </View>
     </ScrollView>

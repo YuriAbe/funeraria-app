@@ -5,11 +5,13 @@ import { createStackNavigator } from '@react-navigation/stack';
 // Importar telas
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
+import CadastroScreen from './src/screens/CadastroScreen';
 
 // Tipos para navegação
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
+  Cadastro: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -34,6 +36,19 @@ export default function App() {
           options={{
             headerShown: true,
             title: 'Login',
+            headerStyle: { backgroundColor: '#3498db' },
+            headerTintColor: '#ffffff',
+            headerTitleStyle: { fontWeight: '600' },
+          }}
+        />
+        
+        {/* Tela de cadastro */}
+        <Stack.Screen 
+          name="Cadastro" 
+          component={CadastroScreen}
+          options={{
+            headerShown: true,
+            title: 'Criar Conta',
             headerStyle: { backgroundColor: '#3498db' },
             headerTintColor: '#ffffff',
             headerTitleStyle: { fontWeight: '600' },
