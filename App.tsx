@@ -36,7 +36,7 @@ export default function App() {
           options={{
             headerShown: true,
             title: 'Login',
-            headerStyle: { backgroundColor: '#3498db' },
+            headerStyle: { backgroundColor: '#3a4774' },
             headerTintColor: '#ffffff',
             headerTitleStyle: { fontWeight: '600' },
           }}
@@ -49,7 +49,7 @@ export default function App() {
           options={{
             headerShown: true,
             title: 'Criar Conta',
-            headerStyle: { backgroundColor: '#3498db' },
+            headerStyle: { backgroundColor: '#3a4774' },
             headerTintColor: '#ffffff',
             headerTitleStyle: { fontWeight: '600' },
           }}

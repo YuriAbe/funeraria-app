@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   primaryButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#3a4774',
     paddingVertical: 15,
     paddingHorizontal: 40,
     borderRadius: 25,
@@ -362,10 +362,10 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#3498db',
+    borderColor: '#3a4774',
   },
   secondaryButtonText: {
-    color: '#3498db',
+    color: '#3a4774',
     fontSize: 18,
     fontWeight: '600',
   },

@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   primaryButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#3a4774',
     paddingVertical: 15,
     paddingHorizontal: 40,
     borderRadius: 25,
@@ -220,10 +220,10 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#3498db',
+    borderColor: '#3a4774',
   },
   secondaryButtonText: {
-    color: '#3498db',
+    color: '#3a4774',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   forgotPasswordText: {
-    color: '#3498db',
+    color: '#3a4774',
     fontSize: 14,
     fontWeight: '500',
     textDecorationLine: 'underline',
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   signupLink: {
-    color: '#3498db',
+    color: '#3a4774',
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   cadastroLink: {
-    color: '#3498db',
+    color: '#3a4774',
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
