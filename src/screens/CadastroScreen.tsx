@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { auth } from '../services/connectionFirebase';
 
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
   Cadastro: undefined;
+  Main: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'Cadastro'>;
@@ -75,6 +76,25 @@ export default function CadastroScreen() {
     setLoading(true);
 
     try {
+      // Primeiro, verificar se o email já está em uso
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      
+      if (signInMethods.length > 0) {
+        Alert.alert(
+          'Email já cadastrado', 
+          'Este email já possui uma conta. Deseja fazer login?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { 
+              text: 'Fazer Login', 
+              onPress: () => navigation.navigate('Login')
+            }
+          ]
+        );
+        setLoading(false);
+        return;
+      }
+
       // Criar usuário no Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -83,7 +103,7 @@ export default function CadastroScreen() {
       
       Alert.alert(
         'Sucesso!', 
-        'Conta criada com sucesso!',
+        'Conta criada com sucesso! Você será redirecionado para fazer login.',
         [
           {
             text: 'OK',
@@ -118,7 +138,7 @@ export default function CadastroScreen() {
   };
 
   const handleVoltar = () => {
-    navigation.goBack();
+    navigation.navigate('Home');
   };
 
   return (

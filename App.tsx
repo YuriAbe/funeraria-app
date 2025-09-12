@@ -6,12 +6,14 @@ import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import CadastroScreen from './src/screens/CadastroScreen';
+import MainScreen from './src/screens/MainScreen';
 
 // Tipos para navegação
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
   Cadastro: undefined;
+  Main: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -52,6 +54,15 @@ export default function App() {
             headerStyle: { backgroundColor: '#3a4774' },
             headerTintColor: '#ffffff',
             headerTitleStyle: { fontWeight: '600' },
+          }}
+        />
+        
+        {/* Tela principal da funerária */}
+        <Stack.Screen 
+          name="Main" 
+          component={MainScreen}
+          options={{
+            headerShown: false,
           }}
         />
       </Stack.Navigator>

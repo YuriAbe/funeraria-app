@@ -17,6 +17,7 @@ type RootStackParamList = {
   Home: undefined;
   Login: undefined;
   Cadastro: undefined;
+  Main: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
@@ -32,12 +33,12 @@ export default function LoginScreen() {
   const handleLogin = () => {
     // Aqui você pode adicionar a lógica de login
     console.log('Login:', { email, password });
-    // Por enquanto, vamos apenas voltar para a home
-    navigation.goBack();
+    // Por enquanto, simular login bem-sucedido e ir para tela principal
+    navigation.navigate('Main');
   };
 
   const handleVoltar = () => {
-    navigation.goBack();
+    navigation.navigate('Home');
   };
 
     return (
