@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail, updateProfile } from 'firebase/auth';
 import { auth } from '../services/connectionFirebase';
 
 type RootStackParamList = {
@@ -98,19 +98,17 @@ export default function CadastroScreen() {
       // Criar usuário no Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
+      // Atualizar displayName com o nome fornecido no cadastro
+      try {
+        await updateProfile(user, { displayName: nome });
+      } catch (err) {
+        console.warn('Não foi possível salvar displayName:', err);
+      }
+
       console.log('Usuário criado com sucesso:', user.uid);
-      
-      Alert.alert(
-        'Sucesso!', 
-        'Conta criada com sucesso! Você será redirecionado para fazer login.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Login')
-          }
-        ]
-      );
+
+      // Redirecionar automaticamente para Login para que o usuário faça login com suas credenciais
+      navigation.navigate('Login');
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
       

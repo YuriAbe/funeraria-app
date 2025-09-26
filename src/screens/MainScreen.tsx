@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Dimensions,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -18,6 +19,7 @@ type RootStackParamList = {
   Login: undefined;
   Cadastro: undefined;
   Main: undefined;
+  Profile: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
@@ -157,92 +159,107 @@ export default function MainScreen() {
     );
   };
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    // Simular refresh (aqui você poderia recarregar dados via API)
+    setTimeout(() => setRefreshing(false), 800);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Image 
-            source={require('../../assets/logosemfundo.png')} 
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Sair</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.welcomeText}>Bem-vindo aos nossos serviços</Text>
-        <Text style={styles.subtitleText}>Estamos aqui para ajudar em momentos difíceis</Text>
-      </View>
-
-      {/* Categories Filter */}
-      <View style={styles.categoriesContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContent}
-        >
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category.id && styles.categoryButtonActive
-              ]}
-              onPress={() => setSelectedCategory(category.id)}
-            >
-              <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text style={[
-                styles.categoryText,
-                selectedCategory === category.id && styles.categoryTextActive
-              ]}>
-                {category.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Services Grid */}
-      <ScrollView 
-        style={styles.servicesContainer}
+      <ScrollView
+        contentContainerStyle={styles.screenContent}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.servicesContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={styles.servicesGrid}>
-          {filteredServices.map((service) => (
-            <TouchableOpacity
-              key={service.id}
-              style={[styles.serviceCard, { borderLeftColor: service.color }]}
-              onPress={() => handleServicePress(service)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.serviceHeader}>
-                <Text style={styles.serviceIcon}>{service.icon}</Text>
-                <View style={[styles.serviceIndicator, { backgroundColor: service.color }]} />
-              </View>
-              <Text style={styles.serviceTitle}>{service.title}</Text>
-              <Text style={styles.serviceDescription}>{service.description}</Text>
-              <View style={styles.serviceFooter}>
-                <Text style={styles.serviceAction}>Solicitar →</Text>
-              </View>
+        {/* Header (tappable avatar -> profile) */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')} accessibilityLabel="open-profile">
+              <Image 
+                source={require('../../assets/logosemfundo.png')} 
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
-          ))}
+
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutText}>Sair</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.welcomeText}>Bem-vindo aos nossos serviços</Text>
+          <Text style={styles.subtitleText}>Estamos aqui para ajudar em momentos difíceis</Text>
         </View>
 
-        {/* Emergency Contact */}
-        <View style={styles.emergencyContainer}>
-          <Text style={styles.emergencyTitle}>📞 Atendimento 24h</Text>
-          <Text style={styles.emergencyText}>
-            Para situações urgentes, ligue para nosso atendimento 24 horas
-          </Text>
-          <TouchableOpacity style={styles.emergencyButton}>
-            <Text style={styles.emergencyButtonText}>Ligar Agora</Text>
-          </TouchableOpacity>
+        {/* Categories Filter */}
+        <View style={styles.categoriesContainer}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesContent}
+          >
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryButton,
+                  selectedCategory === category.id && styles.categoryButtonActive
+                ]}
+                onPress={() => setSelectedCategory(category.id)}
+              >
+                <Text style={styles.categoryIcon}>{category.icon}</Text>
+                <Text style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.categoryTextActive
+                ]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
-        {/* Footer spacing */}
-        <View style={styles.footerSpacing} />
+        {/* Services Grid */}
+        <View style={styles.servicesContainer}>
+          <View style={styles.servicesContent}>
+            <View style={styles.servicesGrid}>
+              {filteredServices.map((service) => (
+                <TouchableOpacity
+                  key={service.id}
+                  style={[styles.serviceCard, { borderLeftColor: service.color }]}
+                  onPress={() => handleServicePress(service)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.serviceHeader}>
+                    <Text style={styles.serviceIcon}>{service.icon}</Text>
+                    <View style={[styles.serviceIndicator, { backgroundColor: service.color }]} />
+                  </View>
+                  <Text style={styles.serviceTitle}>{service.title}</Text>
+                  <Text style={styles.serviceDescription}>{service.description}</Text>
+                  <View style={styles.serviceFooter}>
+                    <Text style={styles.serviceAction}>Solicitar →</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Emergency Contact */}
+          <View style={styles.emergencyContainer}>
+            <Text style={styles.emergencyTitle}>📞 Atendimento 24h</Text>
+            <Text style={styles.emergencyText}>
+              Para situações urgentes, ligue para nosso atendimento 24 horas
+            </Text>
+            <TouchableOpacity style={styles.emergencyButton}>
+              <Text style={styles.emergencyButtonText}>Ligar Agora</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer spacing */}
+          <View style={styles.footerSpacing} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -252,6 +269,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  screenContent: {
+    paddingBottom: 30,
   },
   header: {
     backgroundColor: '#2c3e50',

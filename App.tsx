@@ -7,6 +7,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import CadastroScreen from './src/screens/CadastroScreen';
 import MainScreen from './src/screens/MainScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 // Tipos para navegação
 type RootStackParamList = {
@@ -14,6 +15,7 @@ type RootStackParamList = {
   Login: undefined;
   Cadastro: undefined;
   Main: undefined;
+  Profile: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -64,6 +66,12 @@ export default function App() {
           options={{
             headerShown: false,
           }}
+        />
+        {/* Profile */}
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{ headerShown: true, title: 'Perfil' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
