@@ -31,6 +31,8 @@ export default function ProfileScreen() {
   const [showPasswordEditor, setShowPasswordEditor] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((u) => {
@@ -243,9 +245,53 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount} disabled={loading}>
-          <Text style={styles.deleteText}>Deletar Conta</Text>
-        </TouchableOpacity>
+        {/* Delete flow: show inline password confirmation before performing deletion */}
+        {!showDeleteConfirm ? (
+          <TouchableOpacity style={styles.deleteButton} onPress={() => setShowDeleteConfirm(true)} disabled={loading}>
+            <Text style={styles.deleteText}>Deletar Conta</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.fieldLabel}>Confirme sua senha para deletar a conta</Text>
+            <TextInput style={[styles.input, { marginTop: 8 }]} value={deletePassword} onChangeText={setDeletePassword} secureTextEntry placeholder="Senha atual" />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
+              <TouchableOpacity style={[styles.saveButton, { backgroundColor: '#e74c3c', flex: 1, marginRight: 8 }]} onPress={async () => {
+                // perform delete using the provided password
+                setLoading(true);
+                try {
+                  if (!deletePassword) return Alert.alert('Erro', 'Informe sua senha para confirmar a exclusão');
+                  // reauthenticate using the deletePassword
+                  if (!currentUser || !currentUser.email) throw new Error('Usuário não autenticado');
+                  const credential = EmailAuthProvider.credential(currentUser.email, deletePassword);
+                  await reauthenticateWithCredential(currentUser, credential);
+                  await deleteUser(currentUser);
+                  try { await auth.signOut(); } catch (e) { console.warn('signOut after delete failed', e); }
+                  Alert.alert('Conta deletada', 'Sua conta foi excluída com sucesso');
+                  setShowDeleteConfirm(false);
+                  setDeletePassword('');
+                  navigation.navigate('Home');
+                } catch (err: any) {
+                  console.error('deleteUser error:', err.code, err.message || err);
+                  if (err.code === 'auth/wrong-password') {
+                    Alert.alert('Erro', 'Senha incorreta. Tente novamente.');
+                  } else if (err.code === 'auth/requires-recent-login') {
+                    Alert.alert('Erro', 'Por segurança, faça login novamente antes de deletar a conta.');
+                  } else {
+                    Alert.alert('Erro', err.message || 'Não foi possível deletar a conta');
+                  }
+                } finally {
+                  setLoading(false);
+                }
+              }}>
+                <Text style={styles.saveButtonText}>Confirmar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#6c757d', flex: 1 }]} onPress={() => { setShowDeleteConfirm(false); setDeletePassword(''); }}>
+                <Text style={{ color: '#6c757d', fontWeight: '700' }}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
       </View>
     </KeyboardAvoidingView>
