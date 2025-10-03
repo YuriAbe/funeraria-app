@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../services/connectionFirebase';
 import { updateEmail, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 
@@ -18,35 +19,132 @@ type NavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
-  const [email, setEmail] = useState(currentUser?.email || '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Show displayName if available; fallback to email prefix (before @) or 'Usuário'
-  // Use only the displayName field for the user's name; do NOT fallback to email prefix
-  const initialDisplay = currentUser?.displayName || 'Usuário';
-  const [displayName, setDisplayName] = useState(initialDisplay);
+  // Profile fields (read-only display, fetched from Firebase or defaults)
+  const [displayName, setDisplayName] = useState(currentUser?.displayName || 'Usuário');
+  const [email, setEmail] = useState(currentUser?.email || '');
+  const [cidade, setCidade] = useState(''); // TODO: fetch from DB if stored
+  const [telefone, setTelefone] = useState(''); // TODO: fetch from DB if stored, format (XX) XXXXX-XXXX
+  const [dataNascimento, setDataNascimento] = useState(''); // TODO: fetch from DB if stored, format DD/MM/AAAA
   const [photoURL, setPhotoURL] = useState(currentUser?.photoURL || null);
+
+  // Editing states for each field
   const [showPasswordEditor, setShowPasswordEditor] = useState(false);
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
-  const [emailError, setEmailError] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
+  const [isEditingCidade, setIsEditingCidade] = useState(false);
+  const [tempCidade, setTempCidade] = useState('');
+
+  const [isEditingTelefone, setIsEditingTelefone] = useState(false);
+  const [tempTelefone, setTempTelefone] = useState('');
+
+  const [isEditingDataNascimento, setIsEditingDataNascimento] = useState(false);
+  const [tempDataNascimento, setTempDataNascimento] = useState('');
+
+  // Delete account flow
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
 
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged((u) => {
+    const unsub = auth.onAuthStateChanged(async (u) => {
       setCurrentUser(u);
       setEmail(u?.email || '');
-      // update displayName strictly from auth profile (no fallback to email)
       setDisplayName(u?.displayName || 'Usuário');
       setPhotoURL(u?.photoURL || null);
+      
+      // Load saved profile data from AsyncStorage
+      if (u) {
+        await loadProfileData(u.uid);
+      }
     });
     return () => unsub();
   }, []);
 
+  // Save profile data to AsyncStorage
+  const saveProfileData = async (userId: string, data: { cidade?: string; telefone?: string; dataNascimento?: string }) => {
+    try {
+      const key = `profile_${userId}`;
+      const existing = await AsyncStorage.getItem(key);
+      const profile = existing ? JSON.parse(existing) : {};
+      const updated = { ...profile, ...data };
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
+      console.log('Profile data saved locally:', updated);
+    } catch (err) {
+      console.error('Error saving profile data:', err);
+    }
+  };
+
+  // Load profile data from AsyncStorage
+  const loadProfileData = async (userId: string) => {
+    try {
+      const key = `profile_${userId}`;
+      const stored = await AsyncStorage.getItem(key);
+      if (stored) {
+        const profile = JSON.parse(stored);
+        if (profile.cidade) setCidade(profile.cidade);
+        if (profile.telefone) setTelefone(profile.telefone);
+        if (profile.dataNascimento) setDataNascimento(profile.dataNascimento);
+        console.log('Profile data loaded from local storage:', profile);
+      }
+    } catch (err) {
+      console.error('Error loading profile data:', err);
+    }
+  };
+
+  // Helper: format phone number as (XX) XXXXX-XXXX
+  const formatPhone = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+    } else if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
+  };
+
+  // Helper: apply phone mask while typing
+  const applyPhoneMask = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length <= 2) return cleaned;
+    if (cleaned.length <= 7) return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+    if (cleaned.length <= 11) return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7, 11)}`;
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7, 11)}`;
+  };
+
+  // Helper: format date as DD/MM/AAAA
+  const formatDate = (dateStr: string) => {
+    const cleaned = dateStr.replace(/\D/g, '');
+    if (cleaned.length === 8) {
+      return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4)}`;
+    }
+    return dateStr;
+  };
+
+  // Helper: apply date mask while typing
+  const applyDateMask = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length <= 2) return cleaned;
+    if (cleaned.length <= 4) return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+    if (cleaned.length <= 8) return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
+    return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
+  };
+
+  // Validation: check if date is valid (DD/MM/AAAA)
+  const isValidDate = (dateStr: string) => {
+    const cleaned = dateStr.replace(/\D/g, '');
+    if (cleaned.length !== 8) return false;
+    const day = parseInt(cleaned.slice(0, 2), 10);
+    const month = parseInt(cleaned.slice(2, 4), 10);
+    const year = parseInt(cleaned.slice(4, 8), 10);
+    if (month < 1 || month > 12) return false;
+    if (day < 1 || day > 31) return false;
+    if (year < 1900 || year > new Date().getFullYear()) return false;
+    return true;
+  };
+
   const isValidEmail = (value: string) => {
-    // simple but effective email validation
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(value.toLowerCase());
   };
@@ -56,32 +154,6 @@ export default function ProfileScreen() {
     if (!currentPassword) return Promise.reject(new Error('Por favor, informe sua senha atual para confirmar a operação'));
     const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
     return reauthenticateWithCredential(currentUser, credential);
-  };
-
-  const handleUpdateEmail = async () => {
-    if (!email) return Alert.alert('Erro', 'Email não pode ser vazio');
-    setLoading(true);
-    try {
-      // Reautenticar (exige senha atual)
-      await reauthenticate();
-      await updateEmail(currentUser!, email);
-      Alert.alert('Sucesso', 'Email atualizado com sucesso');
-      setCurrentPassword('');
-    } catch (err: any) {
-      console.error('updateEmail error:', err.code, err.message);
-      // Provide actionable messages for common Firebase errors
-      if (err.code === 'auth/operation-not-allowed') {
-        Alert.alert('Erro', 'Esta operação não é permitida pelo provedor. Verifique nas configurações do Firebase se a alteração de email está habilitada ou se é necessário verificar o novo email antes de trocar.');
-      } else if (err.code === 'auth/email-already-in-use') {
-        Alert.alert('Erro', 'Este email já está em uso por outro usuário.');
-      } else if (err.code === 'auth/requires-recent-login') {
-        Alert.alert('Erro', 'Por segurança, por favor entre novamente antes de alterar o email.');
-      } else {
-        Alert.alert('Erro', err.message || 'Não foi possível atualizar o email');
-      }
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleUpdatePassword = async () => {
@@ -95,9 +167,73 @@ export default function ProfileScreen() {
       Alert.alert('Sucesso', 'Senha atualizada com sucesso');
       setNewPassword('');
       setCurrentPassword('');
+      setShowPasswordEditor(false);
     } catch (err: any) {
       console.error(err);
       Alert.alert('Erro', err.message || 'Não foi possível atualizar a senha');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateCidade = async () => {
+    if (!tempCidade.trim()) return Alert.alert('Erro', 'Cidade não pode ser vazia');
+    setLoading(true);
+    try {
+      setCidade(tempCidade);
+      // Save to AsyncStorage
+      if (currentUser) {
+        await saveProfileData(currentUser.uid, { cidade: tempCidade });
+      }
+      setIsEditingCidade(false);
+      Alert.alert('Sucesso', 'Cidade atualizada com sucesso');
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Erro', 'Não foi possível atualizar a cidade');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateTelefone = async () => {
+    const cleaned = tempTelefone.replace(/\D/g, '');
+    if (cleaned.length < 10 || cleaned.length > 11) {
+      return Alert.alert('Erro', 'Telefone deve ter 10 ou 11 dígitos (DDD + número)');
+    }
+    setLoading(true);
+    try {
+      setTelefone(cleaned);
+      // Save to AsyncStorage
+      if (currentUser) {
+        await saveProfileData(currentUser.uid, { telefone: cleaned });
+      }
+      setIsEditingTelefone(false);
+      Alert.alert('Sucesso', 'Telefone atualizado com sucesso');
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Erro', 'Não foi possível atualizar o telefone');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateDataNascimento = async () => {
+    if (!isValidDate(tempDataNascimento)) {
+      return Alert.alert('Erro', 'Data inválida. Use o formato DD/MM/AAAA');
+    }
+    const cleaned = tempDataNascimento.replace(/\D/g, '');
+    setLoading(true);
+    try {
+      setDataNascimento(cleaned);
+      // Save to AsyncStorage
+      if (currentUser) {
+        await saveProfileData(currentUser.uid, { dataNascimento: cleaned });
+      }
+      setIsEditingDataNascimento(false);
+      Alert.alert('Sucesso', 'Data de nascimento atualizada com sucesso');
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Erro', 'Não foi possível atualizar a data de nascimento');
     } finally {
       setLoading(false);
     }
@@ -144,65 +280,133 @@ export default function ProfileScreen() {
         <Text style={styles.title}>{displayName || 'Usuário'}</Text>
 
 
-        {/* Email and password inside boxed cards for clearer visualization */}
+        {/* Read-only profile fields in cards */}
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>Nome</Text>
+          <Text style={styles.fieldValue}>{displayName || 'Usuário'}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>Email</Text>
+          <Text style={styles.fieldValue}>{email || 'Não informado'}</Text>
+        </View>
+
         <View style={styles.card}>
           <View style={styles.cardRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.fieldLabel}>Email</Text>
-              {isEditingEmail ? (
-                <TextInput style={[styles.input, { marginTop: 6 }]} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+              <Text style={styles.fieldLabel}>Cidade</Text>
+              {isEditingCidade ? (
+                <TextInput
+                  style={[styles.input, { marginTop: 6 }]}
+                  value={tempCidade}
+                  onChangeText={setTempCidade}
+                  placeholder="Digite a cidade"
+                />
               ) : (
-                <Text style={styles.fieldValue}>{currentUser?.email || ''}</Text>
+                <Text style={styles.fieldValue}>{cidade || 'Não informado'}</Text>
               )}
             </View>
-
-            <TouchableOpacity style={styles.smallIconButton} onPress={() => setIsEditingEmail((v) => !v)}>
-              <Text style={styles.smallIconText}>{isEditingEmail ? '✕' : '✎'}</Text>
+            <TouchableOpacity
+              style={styles.smallIconButton}
+              onPress={() => {
+                if (isEditingCidade) {
+                  setIsEditingCidade(false);
+                } else {
+                  setTempCidade(cidade);
+                  setIsEditingCidade(true);
+                }
+              }}
+            >
+              <Text style={styles.smallIconText}>{isEditingCidade ? '✕' : '✎'}</Text>
             </TouchableOpacity>
           </View>
 
-          {isEditingEmail && (
-            <View style={{ marginTop: 12 }}>
-              <Text style={styles.label}>Senha atual (para confirmar)</Text>
-              <TextInput
-                style={styles.input}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry
-              />
-
-              {/* Live validation for email */}
-              <View style={{ marginTop: 10 }}>
-                {emailError ? <Text style={{ color: '#e74c3c', marginBottom: 8 }}>{emailError}</Text> : null}
-              </View>
-
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={async () => {
-                  if (!email) return Alert.alert('Erro', 'Email não pode ser vazio');
-                  if (!isValidEmail(email)) return Alert.alert('Erro', 'Email inválido');
-                  setLoading(true);
-                  try {
-                    await reauthenticate();
-                    await updateEmail(currentUser!, email);
-                    Alert.alert('Sucesso', 'Email atualizado com sucesso');
-                    setIsEditingEmail(false);
-                    setCurrentPassword('');
-                    setEmailError('');
-                  } catch (err: any) {
-                    console.error(err);
-                    Alert.alert('Erro', err.message || 'Não foi possível atualizar o email');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-              >
-                <Text style={styles.saveButtonText}>Salvar</Text>
-              </TouchableOpacity>
-            </View>
+          {isEditingCidade && (
+            <TouchableOpacity style={styles.saveButton} onPress={handleUpdateCidade} disabled={loading}>
+              <Text style={styles.saveButtonText}>Salvar</Text>
+            </TouchableOpacity>
           )}
         </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Telefone</Text>
+              {isEditingTelefone ? (
+                <TextInput
+                  style={[styles.input, { marginTop: 6 }]}
+                  value={tempTelefone}
+                  onChangeText={(text) => setTempTelefone(applyPhoneMask(text))}
+                  placeholder="(XX) XXXXX-XXXX"
+                  keyboardType="phone-pad"
+                  maxLength={15}
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{telefone ? formatPhone(telefone) : 'Não informado'}</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.smallIconButton}
+              onPress={() => {
+                if (isEditingTelefone) {
+                  setIsEditingTelefone(false);
+                } else {
+                  setTempTelefone(telefone ? formatPhone(telefone) : '');
+                  setIsEditingTelefone(true);
+                }
+              }}
+            >
+              <Text style={styles.smallIconText}>{isEditingTelefone ? '✕' : '✎'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isEditingTelefone && (
+            <TouchableOpacity style={styles.saveButton} onPress={handleUpdateTelefone} disabled={loading}>
+              <Text style={styles.saveButtonText}>Salvar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Data de Nascimento</Text>
+              {isEditingDataNascimento ? (
+                <TextInput
+                  style={[styles.input, { marginTop: 6 }]}
+                  value={tempDataNascimento}
+                  onChangeText={(text) => setTempDataNascimento(applyDateMask(text))}
+                  placeholder="DD/MM/AAAA"
+                  keyboardType="number-pad"
+                  maxLength={10}
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{dataNascimento ? formatDate(dataNascimento) : 'Não informado'}</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.smallIconButton}
+              onPress={() => {
+                if (isEditingDataNascimento) {
+                  setIsEditingDataNascimento(false);
+                } else {
+                  setTempDataNascimento(dataNascimento ? formatDate(dataNascimento) : '');
+                  setIsEditingDataNascimento(true);
+                }
+              }}
+            >
+              <Text style={styles.smallIconText}>{isEditingDataNascimento ? '✕' : '✎'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isEditingDataNascimento && (
+            <TouchableOpacity style={styles.saveButton} onPress={handleUpdateDataNascimento} disabled={loading}>
+              <Text style={styles.saveButtonText}>Salvar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Password card: only editable field */}
 
         <View style={styles.card}>
           <View style={styles.cardRow}>
