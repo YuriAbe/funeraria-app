@@ -34,6 +34,12 @@ export default function ProfileScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
+  const [isEditingNome, setIsEditingNome] = useState(false);
+  const [tempNome, setTempNome] = useState('');
+
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [tempEmail, setTempEmail] = useState('');
+
   const [isEditingCidade, setIsEditingCidade] = useState(false);
   const [tempCidade, setTempCidade] = useState('');
 
@@ -53,7 +59,7 @@ export default function ProfileScreen() {
       setEmail(u?.email || '');
       setDisplayName(u?.displayName || 'Usuário');
       setPhotoURL(u?.photoURL || null);
-      
+
       // Load saved profile data from AsyncStorage
       if (u) {
         await loadProfileData(u.uid);
@@ -63,7 +69,7 @@ export default function ProfileScreen() {
   }, []);
 
   // Save profile data to AsyncStorage
-  const saveProfileData = async (userId: string, data: { cidade?: string; telefone?: string; dataNascimento?: string }) => {
+  const saveProfileData = async (userId: string, data: { nome?: string; email?: string; cidade?: string; telefone?: string; dataNascimento?: string }) => {
     try {
       const key = `profile_${userId}`;
       const existing = await AsyncStorage.getItem(key);
@@ -83,6 +89,8 @@ export default function ProfileScreen() {
       const stored = await AsyncStorage.getItem(key);
       if (stored) {
         const profile = JSON.parse(stored);
+        if (profile.nome) setDisplayName(profile.nome);
+        if (profile.email) setEmail(profile.email);
         if (profile.cidade) setCidade(profile.cidade);
         if (profile.telefone) setTelefone(profile.telefone);
         if (profile.dataNascimento) setDataNascimento(profile.dataNascimento);
@@ -176,6 +184,49 @@ export default function ProfileScreen() {
     }
   };
 
+  // Teste constantes rápidas
+  // NOME FUNÇÃO
+  const handleUpdateNome = async () => {
+    if (!tempNome.trim()) return Alert.alert('Erro', 'Nome não pode ser vazio');
+    setLoading(true);
+    try {
+      setDisplayName(tempNome);
+      // Save to AsyncStorage
+      if (currentUser) {
+        await saveProfileData(currentUser.uid, { nome: tempNome });
+      }
+      setIsEditingNome(false);
+      Alert.alert('Sucesso', 'Nome atualizado com sucesso');
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Erro', 'Não foi possível atualizar o nome');
+    } finally {
+      setLoading(false);
+    }
+  };
+  // EMAIL FUNÇÃO
+  const handleUpdateEmail = async () => {
+    if (!tempEmail.trim()) return Alert.alert('Erro', 'Email não pode ser vazio');
+    if (!isValidEmail(tempEmail)) return Alert.alert('Erro', 'Email inválido');
+    setLoading(true);
+    try {
+      setEmail(tempEmail);
+      // Save to AsyncStorage
+      if (currentUser) {
+        await saveProfileData(currentUser.uid, { email: tempEmail });
+      }
+      setIsEditingEmail(false);
+      Alert.alert('Sucesso', 'Email atualizado com sucesso');
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert('Erro', 'Não foi possível atualizar o email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //Fim
+
   const handleUpdateCidade = async () => {
     if (!tempCidade.trim()) return Alert.alert('Erro', 'Cidade não pode ser vazia');
     setLoading(true);
@@ -245,22 +296,24 @@ export default function ProfileScreen() {
       'Tem certeza que deseja excluir sua conta? Essa ação não pode ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Deletar', style: 'destructive', onPress: async () => {
-          setLoading(true);
-          try {
-            await reauthenticate();
-            await deleteUser(currentUser!);
-            // After deleting the user, ensure we sign out and navigate home
-            try { await auth.signOut(); } catch (e) { console.warn('signOut after delete failed', e); }
-            Alert.alert('Conta deletada', 'Sua conta foi excluída com sucesso');
-            navigation.navigate('Home');
-          } catch (err: any) {
-            console.error(err);
-            Alert.alert('Erro', err.message || 'Não foi possível deletar a conta');
-          } finally {
-            setLoading(false);
+        {
+          text: 'Deletar', style: 'destructive', onPress: async () => {
+            setLoading(true);
+            try {
+              await reauthenticate();
+              await deleteUser(currentUser!);
+              // After deleting the user, ensure we sign out and navigate home
+              try { await auth.signOut(); } catch (e) { console.warn('signOut after delete failed', e); }
+              Alert.alert('Conta deletada', 'Sua conta foi excluída com sucesso');
+              navigation.navigate('Home');
+            } catch (err: any) {
+              console.error(err);
+              Alert.alert('Erro', err.message || 'Não foi possível deletar a conta');
+            } finally {
+              setLoading(false);
+            }
           }
-        }}
+        }
       ]
     );
   };
@@ -282,13 +335,75 @@ export default function ProfileScreen() {
 
         {/* Read-only profile fields in cards */}
         <View style={styles.card}>
-          <Text style={styles.fieldLabel}>Nome</Text>
-          <Text style={styles.fieldValue}>{displayName || 'Usuário'}</Text>
+          <View style={styles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Nome</Text>
+              {isEditingNome ? (
+                <TextInput
+                  style={[styles.input, { marginTop: 6 }]}
+                  value={tempNome}
+                  onChangeText={setTempNome}
+                  placeholder="Digite o nome"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{displayName || 'Usuário'}</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.smallIconButton}
+              onPress={() => {
+                if (isEditingNome) {
+                  setIsEditingNome(false);
+                } else {
+                  setTempNome(displayName);
+                  setIsEditingNome(true);
+                }
+              }}
+            >
+              <Text style={styles.smallIconText}>{isEditingNome ? '✕' : '✎'}</Text>
+            </TouchableOpacity>
+          </View>
+          {isEditingNome && (
+            <TouchableOpacity style={styles.saveButton} onPress={handleUpdateNome} disabled={loading}>
+              <Text style={styles.saveButtonText}>Salvar</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.fieldLabel}>Email</Text>
-          <Text style={styles.fieldValue}>{email || 'Não informado'}</Text>
+          <View style={styles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              {isEditingEmail ? (
+                <TextInput
+                  style={[styles.input, { marginTop: 6 }]}
+                  value={tempEmail}
+                  onChangeText={setTempEmail}
+                  placeholder="Digite o email"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{email || 'Não informado'}</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.smallIconButton}
+              onPress={() => {
+                if (isEditingEmail) {
+                  setIsEditingEmail(false);
+                } else {
+                  setTempEmail(email);
+                  setIsEditingEmail(true);
+                }
+              }}
+            >
+              <Text style={styles.smallIconText}>{isEditingEmail ? '✕' : '✎'}</Text>
+            </TouchableOpacity>
+          </View>
+          {isEditingEmail && (
+            <TouchableOpacity style={styles.saveButton} onPress={handleUpdateEmail} disabled={loading}>
+              <Text style={styles.saveButtonText}>Salvar</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.card}>
@@ -498,7 +613,7 @@ export default function ProfileScreen() {
         )}
 
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAvoidingView >
   );
 }
 
