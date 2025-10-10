@@ -20,6 +20,18 @@ type RootStackParamList = {
   Cadastro: undefined;
   Main: undefined;
   Profile: undefined;
+  CaixaoList: undefined;
+  CaixaoForm: { caixao?: any };
+  ContratoList: undefined;
+  ContratoForm: { contrato?: any };
+  TerrenoList: undefined;
+  TerrenoForm: { terreno?: any };
+  JazigoList: undefined;
+  JazigoForm: { jazigo?: any };
+  DecoracaoList: undefined;
+  DecoracaoForm: { decoracao?: any };
+  LapideList: undefined;
+  LapideForm: { lapide?: any };
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
@@ -130,14 +142,38 @@ export default function MainScreen() {
       });
 
   const handleServicePress = (service: ServiceCard) => {
-    Alert.alert(
-      service.title,
-      `${service.description}\n\nEm breve você será direcionado para mais detalhes sobre este serviço.`,
-      [
-        { text: 'Fechar', style: 'cancel' },
-        { text: 'Solicitar Orçamento', onPress: () => handleRequestQuote(service) }
-      ]
-    );
+    // Navegação direta para os CRUDs correspondentes
+    switch (service.id) {
+      case '1': // Contratos de Caixão
+        navigation.navigate('ContratoList');
+        break;
+      case '2': // Catálogo de Caixões
+        navigation.navigate('CaixaoList');
+        break;
+      case '3': // Terrenos para Sepultamento
+        navigation.navigate('TerrenoList');
+        break;
+      case '4': // Jazigos Familiares
+        navigation.navigate('JazigoList');
+        break;
+      case '5': // Decorações de Cemitério
+        navigation.navigate('DecoracaoList');
+        break;
+      case '6': // Personalização de Lápides
+        navigation.navigate('LapideList');
+        break;
+      default:
+        // Para serviços ainda não implementados
+        Alert.alert(
+          service.title,
+          `${service.description}\n\nEm breve você será direcionado para mais detalhes sobre este serviço.`,
+          [
+            { text: 'Fechar', style: 'cancel' },
+            { text: 'Solicitar Orçamento', onPress: () => handleRequestQuote(service) }
+          ]
+        );
+        break;
+    }
   };
 
   const handleRequestQuote = (service: ServiceCard) => {
