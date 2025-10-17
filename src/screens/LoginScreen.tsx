@@ -6,8 +6,6 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   Image,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -42,16 +40,12 @@ export default function LoginScreen() {
   };
 
     return (
-    <View style={styles.mainContainer}>
       <ScrollView 
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={true}
-        showsHorizontalScrollIndicator={false}
-        scrollEventThrottle={16}
-        bounces={true}
-        alwaysBounceVertical={true}
-        style={{ flex: 1 }}
-        nestedScrollEnabled={true}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
       >
       {/* Logo pequena no topo */}
       <View style={styles.logoContainer}>
@@ -126,7 +120,6 @@ export default function LoginScreen() {
         </Text>
       </View>
     </ScrollView>
-    </View>
   );
 }
 
