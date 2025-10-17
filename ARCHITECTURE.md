@@ -330,7 +330,23 @@ npx expo start --clear
 1. **Erro de dependências**: Use `--legacy-peer-deps`
 2. **Metro bundler travado**: Limpe o cache
 3. **AsyncStorage não persiste**: Verifique permissões
-4. **Firebase não conecta**: Valide variáveis de ambiente
+4. **Firebase não conecta**: Valide variáveis de ambiente no `.env`
+
+### Configuração de Ambiente
+
+O projeto usa variáveis de ambiente para configurações sensíveis:
+
+```bash
+# 1. Copie o template
+cp .env.example .env
+
+# 2. Configure suas credenciais Firebase no .env
+EXPO_PUBLIC_FIREBASE_API_KEY=sua_api_key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=seu_projeto.firebaseapp.com
+# ... outras variáveis
+```
+
+**⚠️ Importante**: Nunca commite o arquivo `.env` com credenciais reais!
 
 ## 📝 Convenções de Código
 
